@@ -10,32 +10,32 @@ class AlzResultPage extends StatelessWidget {
   // Map class codes to risk levels, colors, and descriptions
   static Map<String, dynamic> getClassInfo(String classCode) {
     final classMap = {
-      'normal': {
-        'riskLevel': 'No Signs of Alzheimer\'s',
+      'non_demented': {
+        'riskLevel': 'No Signs of Dementia',
         'riskColor': Colors.green,
         'icon': Icons.check_circle,
         'description': 'Brain scan shows normal cognitive function',
       },
-      'mci': {
-        'riskLevel': 'Mild Cognitive Impairment',
+      'very_mild_demented': {
+        'riskLevel': 'Very Mild Dementia',
+        'riskColor': Colors.yellow,
+        'icon': Icons.info_outline,
+        'description': 'Very mild cognitive decline detected. Monitor regularly.',
+      },
+      'mild_demented': {
+        'riskLevel': 'Mild Dementia',
         'riskColor': Colors.orange,
         'icon': Icons.warning_rounded,
         'description': 'Mild cognitive decline detected. Early intervention recommended.',
       },
-      'moderate': {
-        'riskLevel': 'Moderate Alzheimer\'s Disease',
-        'riskColor': Colors.deepOrange,
+      'moderate_demented': {
+        'riskLevel': 'Moderate Dementia',
+        'riskColor': Colors.red,
         'icon': Icons.error_outline,
         'description': 'Moderate cognitive decline. Consult a neurologist immediately.',
       },
-      'severe': {
-        'riskLevel': 'Severe Alzheimer\'s Disease',
-        'riskColor': Colors.red,
-        'icon': Icons.cancel,
-        'description': 'Severe cognitive decline. Urgent medical intervention required.',
-      },
     };
-    return classMap[classCode] ?? classMap['normal']!;
+    return classMap[classCode] ?? classMap['non_demented']!;
   }
 
   @override
@@ -60,7 +60,7 @@ class AlzResultPage extends StatelessWidget {
     
     // Provide defaults if prediction is empty
     if (prediction.isEmpty) {
-      prediction = {'predicted_class': 'Normal', 'class_code': 'normal', 'confidence': 0.0, 'all_predictions': {}};
+      prediction = {'predicted_class': 'NonDemented', 'class_code': 'non_demented', 'confidence': 0.0, 'all_predictions': {}};
     }
     
     final String classCode = prediction['class_code'] ?? 'normal';
