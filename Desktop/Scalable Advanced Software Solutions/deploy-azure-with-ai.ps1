@@ -14,7 +14,7 @@ Write-Host "╚═════════════════════�
 # CONFIGURATION
 # ============================================================================
 $resourceGroup = "photoshare-ai-rg"
-$location = "eastus"
+$location = "germanywestcentral"  # Allowed regions: switzerlandnorth, italynorth, norwayeast, germanywestcentral, spaincentral
 $registryName = "photoshareairegistry"
 $dbServer = "photoshare-ai-db-$(Get-Random -Minimum 1000 -Maximum 9999)"
 $dbName = "photoshare_db"
