@@ -1,6 +1,5 @@
 # PhotoShare Azure Deployment Script - FINAL CORRECTED VERSION
 # Deploys: Frontend + Backend + DB + Storage + AI Services
-# Current Year: 2026
 
 $ErrorActionPreference = "Stop"
 
@@ -13,7 +12,7 @@ Write-Host "╚═════════════════════�
 # CONFIGURATION
 # ============================================================================
 $resourceGroup = "photoshare-ai-rg"
-$location = "germanywestcentral"
+$location = "norwayeast" # Changed to Norway East to fix Database Capacity Error
 $registryName = "photoshareairegistry$(Get-Random -Minimum 100 -Maximum 999)"
 $dbServer = "photoshare-ai-db-$(Get-Random -Minimum 1000 -Maximum 9999)"
 $dbName = "photoshare_db"
@@ -51,7 +50,6 @@ function Show-Info { param([string]$message) Write-Host "    ℹ️  $message" -
 # STEP 0: Register Providers
 # ============================================================================
 Show-Progress 0 "Registering AI Providers" "🔌"
-az provider register --namespace Microsoft.CognitiveServices
 Show-Info "Registration check complete."
 
 # ============================================================================
@@ -62,7 +60,7 @@ az group create --name $resourceGroup --location $location --output none
 Show-Success "Resource Group created"
 
 # ============================================================================
-# STEP 2: ACR (FIXED: Admin Enabled)
+# STEP 2: ACR 
 # ============================================================================
 Show-Progress 2 "Creating Container Registry" "🐳"
 az acr create --resource-group $resourceGroup --name $registryName --sku Basic --admin-enabled true --output none
@@ -72,13 +70,13 @@ $acrUrl = "$registryName.azurecr.io"
 Show-Success "ACR created and Admin credentials retrieved"
 
 # ============================================================================
-# STEP 3: Build Images (FIXED: Nested Paths)
+# STEP 3: Build Images (FIXED: Uses current directory paths)
 # ============================================================================
 Show-Progress 3 "Building Docker Images" "🏗️"
 Show-Info "Building Backend..."
-az acr build --registry $registryName --image photoshare-backend:latest --file scalable_advanced/backend/Dockerfile ./scalable_advanced/backend
+az acr build --registry $registryName --image photoshare-backend:latest --file backend/Dockerfile ./backend
 Show-Info "Building Frontend..."
-az acr build --registry $registryName --image photoshare-frontend:latest --file scalable_advanced/frontend/Dockerfile ./scalable_advanced/frontend
+az acr build --registry $registryName --image photoshare-frontend:latest --file frontend/Dockerfile ./frontend
 Show-Success "Images pushed to $acrUrl"
 
 # ============================================================================
@@ -136,10 +134,10 @@ az appservice plan create --name $appPlan --resource-group $resourceGroup --sku 
 Show-Success "App Plan created"
 
 # ============================================================================
-# STEP 12: Backend Deployment (FIXED: 2-Step Process)
+# STEP 12: Backend Deployment (FIXED: Init with Nginx placeholder)
 # ============================================================================
 Show-Progress 12 "Deploying Backend Web App" "⚙️"
-az webapp create --resource-group $resourceGroup --plan $appPlan --name $backendApp --runtime "NODE:18-lts" --output none
+az webapp create --resource-group $resourceGroup --plan $appPlan --name $backendApp --deployment-container-image-name nginx --output none
 az webapp config container set --name $backendApp --resource-group $resourceGroup --container-image-name "$acrUrl/photoshare-backend:latest" --container-registry-url "https://$acrUrl" --container-registry-user "$acrUsername" --container-registry-password "$acrPassword" --output none
 
 az webapp config appsettings set --resource-group $resourceGroup --name $backendApp --settings `
@@ -150,10 +148,10 @@ az webapp config appsettings set --resource-group $resourceGroup --name $backend
 Show-Success "Backend online"
 
 # ============================================================================
-# STEP 13: Frontend Deployment (FIXED: 2-Step Process)
+# STEP 13: Frontend Deployment (FIXED: Init with Nginx placeholder)
 # ============================================================================
 Show-Progress 13 "Deploying Frontend Web App" "⚡"
-az webapp create --resource-group $resourceGroup --plan $appPlan --name $frontendApp --runtime "NODE:18-lts" --output none
+az webapp create --resource-group $resourceGroup --plan $appPlan --name $frontendApp --deployment-container-image-name nginx --output none
 az webapp config container set --name $frontendApp --resource-group $resourceGroup --container-image-name "$acrUrl/photoshare-frontend:latest" --container-registry-url "https://$acrUrl" --container-registry-user "$acrUsername" --container-registry-password "$acrPassword" --output none
 
 az webapp config appsettings set --resource-group $resourceGroup --name $frontendApp --settings `
