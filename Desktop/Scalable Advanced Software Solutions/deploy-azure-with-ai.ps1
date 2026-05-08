@@ -14,7 +14,7 @@ Write-Host "╚═════════════════════�
 # CONFIGURATION
 # ============================================================================
 $resourceGroup = "photoshare-ai-rg"
-$location = "germanywestcentral"  # Allowed regions: switzerlandnorth, italynorth, norwayeast, germanywestcentral, spaincentral
+$location = "italynorth"  # Allowed regions: switzerlandnorth, italynorth, norwayeast, germanywestcentral, spaincentral
 $registryName = "photoshareairegistry"
 $dbServer = "photoshare-ai-db-$(Get-Random -Minimum 1000 -Maximum 9999)"
 $dbName = "photoshare_db"
@@ -82,8 +82,8 @@ Show-Success "Resource Group created"
 # ============================================================================
 # STEP 2: Create Container Registry
 # ============================================================================
-Show-Progress 2 "Creating Container Registry (Free tier)" "🐳"
-az acr create --resource-group $resourceGroup --name $registryName --sku Free --output table
+Show-Progress 2 "Creating Container Registry (Standard tier)" "🐳"
+az acr create --resource-group $resourceGroup --name $registryName --sku Standard --output table
 Show-Success "Container Registry created"
 
 # Get ACR credentials
