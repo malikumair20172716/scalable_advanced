@@ -1,0 +1,42 @@
+/* Rating Section */
+.rating-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.rating-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.star {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.star:hover,
+.star.active {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.current-rating {
+  color: #667eea;
+  font-weight: 600;
+  margin-top: 1rem;
+}

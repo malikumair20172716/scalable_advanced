@@ -1,0 +1,143 @@
+{
+  "info": {
+    "_postman_id": "photoshare-api",
+    "name": "PhotoShare API - COM769",
+    "description": "API collection for PhotoShare application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "http://localhost:5000/api/auth/register", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "auth", "register"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"testuser\", \"email\": \"test@example.com\", \"password\": \"password123\", \"full_name\": \"Test User\", \"role\": \"consumer\"}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "http://localhost:5000/api/auth/login", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "auth", "login"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"test@example.com\", \"password\": \"password123\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Photos",
+      "item": [
+        {
+          "name": "Get All Photos",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:5000/api/photos?page=1&limit=20", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "photos"], "query": [{"key": "page", "value": "1"}, {"key": "limit", "value": "20"}]}
+          }
+        },
+        {
+          "name": "Search Photos",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:5000/api/photos/search?q=sunset", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "photos", "search"], "query": [{"key": "q", "value": "sunset"}]}
+          }
+        },
+        {
+          "name": "Get Photo by ID",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:5000/api/photos/1", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "photos", "1"]}
+          }
+        },
+        {
+          "name": "Upload Photo",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "http://localhost:5000/api/photos", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "photos"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"My Photo\", \"caption\": \"A beautiful moment\", \"location\": \"Beach\", \"image_url\": \"https://via.placeholder.com/800x600?text=Photo\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Get Photo Comments",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:5000/api/comments/photo/1", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "comments", "photo", "1"]}
+          }
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "http://localhost:5000/api/comments", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "comments"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"photo_id\": 1, \"content\": \"Great photo!\"}"
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/comments/1", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "comments", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:5000/api/users/1", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "users", "1"]}
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "http://localhost:5000/api/users/1", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["api", "users", "1"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\": \"Updated Name\", \"bio\": \"Photography enthusiast\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": {"raw": "http://localhost:5000/health", "protocol": "http", "host": ["localhost"], "port": ["5000"], "path": ["health"]}
+      }
+    }
+  ],
+  "variable": [
+    {"key": "token", "value": "", "type": "string"}
+  ]
+}
