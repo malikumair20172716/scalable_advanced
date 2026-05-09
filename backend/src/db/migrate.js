@@ -59,90 +59,70 @@ async function enforceUsersRoleConstraint(pool) {
   );
 }
 
-async function ensureDatabaseExists() {
+async function main() {
+  const ssl = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false;
+
   const dbName = process.env.DB_NAME || 'photoshare_db';
   assertValidDbName(dbName);
 
+  // 1. Ensure DB exists
   const postgresPool = new Pool({
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),
-    database: 'postgres'
+    database: 'postgres',
+    ssl: ssl
   });
 
-  const dbExists = await postgresPool.query(
-    'SELECT 1 FROM pg_database WHERE datname = $1 LIMIT 1',
-    [dbName]
-  );
-
-  if (dbExists.rows.length === 0) {
-    await postgresPool.query(`CREATE DATABASE ${dbName}`);
-    console.log(`Created database: ${dbName}`);
-  } else {
-    console.log(`Database exists: ${dbName}`);
+  try {
+    const dbExists = await postgresPool.query(
+      'SELECT 1 FROM pg_database WHERE datname = $1 LIMIT 1',
+      [dbName]
+    );
+    if (dbExists.rows.length === 0) {
+      await postgresPool.query(`CREATE DATABASE ${dbName}`);
+      console.log(`Created database: ${dbName}`);
+    }
+  } finally {
+    await postgresPool.end();
   }
 
-  await postgresPool.end();
-}
-
-async function applySchemaIfNeeded() {
-  const dbName = process.env.DB_NAME || 'photoshare_db';
-
+  // 2. Apply Schema
   const pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),
-    database: dbName
+    database: dbName,
+    ssl: ssl
   });
 
-  const tableExists = await pool.query(
-    `SELECT 1
-     FROM information_schema.tables
-     WHERE table_schema = 'public' AND table_name = 'users'
-     LIMIT 1`
-  );
-
-  if (tableExists.rows.length > 0) {
-    console.log('Schema already initialized (users table exists).');
-    await pool.query('BEGIN');
-    try {
-      await enforceUsersRoleConstraint(pool);
-      await pool.query('COMMIT');
-      console.log('Verified users.role constraint (creator/consumer only).');
-    } catch (err) {
-      await pool.query('ROLLBACK');
-      throw err;
-    } finally {
-      await pool.end();
-    }
-    return;
-  }
-
-  const schemaPath = path.resolve(__dirname, './schema.sql');
-  const schemaSql = await fs.readFile(schemaPath, 'utf8');
-
-  await pool.query('BEGIN');
   try {
-    await pool.query(schemaSql);
-    await enforceUsersRoleConstraint(pool);
-    await pool.query('COMMIT');
-    console.log('Schema applied successfully.');
-  } catch (err) {
-    await pool.query('ROLLBACK');
-    throw err;
+    const tableExists = await pool.query(
+      `SELECT 1 FROM information_schema.tables WHERE table_name = 'users' LIMIT 1`
+    );
+
+    if (tableExists.rows.length > 0) {
+      console.log('Schema already exists. Checking constraints...');
+      await enforceUsersRoleConstraint(pool);
+    } else {
+      const schemaPath = path.resolve(__dirname, './schema.sql');
+      const schemaSql = await fs.readFile(schemaPath, 'utf8');
+      await pool.query(schemaSql);
+      await enforceUsersRoleConstraint(pool);
+      console.log('Schema applied successfully.');
+    }
   } finally {
     await pool.end();
   }
 }
 
-async function main() {
-  await ensureDatabaseExists();
-  await applySchemaIfNeeded();
-}
+export { main as migrate };
 
-main().catch((err) => {
-  console.error('Migration failed:', err);
-  process.exitCode = 1;
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  });
+}

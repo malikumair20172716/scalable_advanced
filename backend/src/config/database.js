@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const pool = new Pool({
+const poolConfig = {
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD,
   host: process.env.DB_HOST || 'localhost',
@@ -13,7 +13,16 @@ const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-});
+};
+
+// Azure PostgreSQL requires SSL in production
+if (process.env.DB_SSL === 'true') {
+  poolConfig.ssl = {
+    rejectUnauthorized: false // Required for Azure Flexible Server unless you provide a root CA
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
