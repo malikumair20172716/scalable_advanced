@@ -80,9 +80,36 @@ try {
 
 # 6. Hosting Plan & Apps (With placeholder image)
 Write-Host "`n[6/7] Creating Hosting Plan & Apps..." -ForegroundColor Yellow
-az appservice plan create --name $appPlan --resource-group $resourceGroup --sku B2 --is-linux --output none
+$existingPlan = az appservice plan list --query "[?resourceGroup=='$resourceGroup'].name" -o tsv
+if ($existingPlan) {
+    $appPlan = $existingPlan
+    Write-Host "    ℹ️  Reusing existing plan: $appPlan" -ForegroundColor Cyan
+} else {
+    try {
+        az appservice plan create --name $appPlan --resource-group $resourceGroup --sku B1 --is-linux --output none
+        Write-Host "    ✅ App Plan created" -ForegroundColor Green
+    } catch {
+        Write-Host "    ⚠️  Plan creation throttled. Attempting to find ANY plan in subscription..." -ForegroundColor Yellow
+        $anyPlan = az appservice plan list --query "[0].name" -o tsv
+        $anyRg = az appservice plan list --query "[0].resourceGroup" -o tsv
+        if ($anyPlan) {
+            $appPlan = $anyPlan
+            $appPlanRg = $anyRg
+            Write-Host "    ℹ️  Using fallback plan: $appPlan in RG: $appPlanRg" -ForegroundColor Cyan
+            # Update webapp creation to use the fallback plan's RG
+            az webapp create --resource-group $resourceGroup --plan "/subscriptions/$subscriptionId/resourceGroups/$appPlanRg/providers/Microsoft.Web/serverfarms/$appPlan" --name $backendApp --deployment-container-image-name nginx --output none
+            az webapp create --resource-group $resourceGroup --plan "/subscriptions/$subscriptionId/resourceGroups/$appPlanRg/providers/Microsoft.Web/serverfarms/$appPlan" --name $frontendApp --deployment-container-image-name nginx --output none
+            goto SkipCreation
+        } else {
+            throw "No App Service Plan found and creation is throttled. Please wait 15 mins."
+        }
+    }
+}
+
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $backendApp --deployment-container-image-name nginx --output none
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $frontendApp --deployment-container-image-name nginx --output none
+
+:SkipCreation
 
 # Configure Backend Settings
 az webapp config appsettings set --resource-group $resourceGroup --name $backendApp --settings `
