@@ -28,7 +28,8 @@ function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]); // page removed to avoid duplicate fetches
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
 
   useEffect(() => {
     if (!isSearching) {

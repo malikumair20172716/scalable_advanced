@@ -7,7 +7,7 @@ import './RatingSection.css';
 function RatingSection({ photoId, initialRating }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  const [average, setAverage] = useState(Number(initialRating) || 0);
+  const [average] = useState(Number(initialRating) || 0);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
   const toast = useToast();
@@ -15,9 +15,9 @@ function RatingSection({ photoId, initialRating }) {
   useEffect(() => {
     // Fetch user's own rating if authenticated
     if (isAuthenticated) {
-      api.get(`/photos/${photoId}/ratings/me`)
+      api.get(`/ratings/photo/${photoId}`)
         .then(res => {
-          if (res.data.rating) setRating(res.data.rating.score);
+          if (res.data.rating) setRating(res.data.rating);
         })
         .catch(() => {}); // Silently ignore if no rating found
     }
@@ -31,9 +31,11 @@ function RatingSection({ photoId, initialRating }) {
 
     setLoading(true);
     try {
-      const res = await api.post(`/photos/${photoId}/ratings`, { score });
+      await api.post(`/ratings`, { photo_id: photoId, rating_value: score });
       setRating(score);
-      setAverage(res.data.average_rating);
+      // Backend returns the rating object, but for average we might need to re-fetch photo details 
+      // or the backend should return the new average.
+      // For now, let's just update the local score.
       toast.success('Rating submitted! Thanks.');
     } catch (err) {
       toast.error('Failed to submit rating.');

@@ -17,7 +17,7 @@ function PhotoDetailPage() {
       try {
         setLoading(true);
         const response = await api.get(`/photos/${id}`);
-        setPhoto(response.data.photo);
+        setPhoto(response.data);
       } catch (err) {
         toast.error('Could not find that photo.');
         console.error(err);

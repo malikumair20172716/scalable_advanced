@@ -107,15 +107,13 @@ function AuthPage() {
             />
           </div>
 
-          {!isLogin && (
-            <div className="form-group">
-              <label>Join as</label>
-              <select name="role" value={formData.role} onChange={handleChange}>
-                <option value="consumer">Consumer (Browse & Rate)</option>
-                <option value="creator">Creator (Upload Photos)</option>
-              </select>
-            </div>
-          )}
+          <div className="form-group">
+            <label>{isLogin ? 'Login as' : 'Join as'}</label>
+            <select name="role" value={formData.role} onChange={handleChange}>
+              <option value="consumer">Consumer (Browse & Rate)</option>
+              <option value="creator">Creator (Upload Photos)</option>
+            </select>
+          </div>
 
           <button type="submit" className="auth-submit-btn" disabled={loading}>
             {loading ? (

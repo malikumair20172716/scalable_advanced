@@ -13,7 +13,7 @@ function CommentSection({ photoId }) {
 
   const fetchComments = useCallback(async () => {
     try {
-      const response = await api.get(`/photos/${photoId}/comments`);
+      const response = await api.get(`/comments/photo/${photoId}`);
       setComments(response.data.comments || []);
     } catch (err) {
       console.error('Failed to fetch comments', err);
@@ -30,7 +30,7 @@ function CommentSection({ photoId }) {
 
     setLoading(true);
     try {
-      await api.post(`/photos/${photoId}/comments`, { content: newComment });
+      await api.post(`/comments`, { photo_id: photoId, content: newComment });
       setNewComment('');
       toast.success('Comment posted!');
       fetchComments();
@@ -45,7 +45,7 @@ function CommentSection({ photoId }) {
     if (!window.confirm('Delete this comment?')) return;
     
     try {
-      await api.delete(`/photos/${photoId}/comments/${commentId}`);
+      await api.delete(`/comments/${commentId}`);
       toast.success('Comment deleted');
       fetchComments();
     } catch (err) {
