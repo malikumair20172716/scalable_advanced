@@ -66,16 +66,21 @@ Write-Host "    ✅ Storage: $storageName" -ForegroundColor Green
 
 # 5. AI Services
 Write-Host "`n[5/7] Provisioning AI Services..." -ForegroundColor Yellow
-az cognitiveservices account create --name $cvAccount --resource-group $resourceGroup --kind ComputerVision --sku F0 --location $location --yes --output none
-az cognitiveservices account create --name $cmAccount --resource-group $resourceGroup --kind ContentModerator --sku F0 --location $location --yes --output none
-az cognitiveservices account create --name $taAccount --resource-group $resourceGroup --kind TextAnalytics --sku F0 --location $location --yes --output none
-$cvKey = az cognitiveservices account keys list --name $cvAccount --resource-group $resourceGroup --query "key1" -o tsv
-$cvEndpoint = az cognitiveservices account show --name $cvAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
-Write-Host "    ✅ AI Services Provisioned" -ForegroundColor Green
+$cvKey = ""; $cvEndpoint = ""
+try {
+    az cognitiveservices account create --name $cvAccount --resource-group $resourceGroup --kind ComputerVision --sku F0 --location $location --yes --output none
+    az cognitiveservices account create --name $cmAccount --resource-group $resourceGroup --kind ContentModerator --sku F0 --location $location --yes --output none
+    az cognitiveservices account create --name $taAccount --resource-group $resourceGroup --kind TextAnalytics --sku F0 --location $location --yes --output none
+    $cvKey = az cognitiveservices account keys list --name $cvAccount --resource-group $resourceGroup --query "key1" -o tsv
+    $cvEndpoint = az cognitiveservices account show --name $cvAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    Write-Host "    ✅ AI Services Provisioned" -ForegroundColor Green
+} catch {
+    Write-Host "    ⚠️  AI Services skipped (already exists or limit reached). App will continue..." -ForegroundColor Yellow
+}
 
 # 6. Hosting Plan & Apps (With placeholder image)
 Write-Host "`n[6/7] Creating Hosting Plan & Apps..." -ForegroundColor Yellow
-az appservice plan create --name $appPlan --resource-group $resourceGroup --sku F1 --is-linux --output none
+az appservice plan create --name $appPlan --resource-group $resourceGroup --sku B2 --is-linux --output none
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $backendApp --deployment-container-image-name nginx --output none
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $frontendApp --deployment-container-image-name nginx --output none
 
