@@ -94,13 +94,18 @@ export async function analyzeSentiment(text) {
       })
     });
 
-    if (!response.ok) return 'neutral';
+    if (!response.ok) {
+      const err = await response.json();
+      console.error('AI Sentiment API Error:', err);
+      return 'neutral';
+    }
 
     const data = await response.json();
     const sentiment = data.documents[0]?.sentiment || 'neutral';
+    console.log(`AI Sentiment for "${text}": ${sentiment}`);
     return sentiment;
   } catch (error) {
-    console.error('AI Error (Sentiment):', error.message);
+    console.error('AI Sentiment Connection Error:', error.message);
     return 'neutral';
   }
 }

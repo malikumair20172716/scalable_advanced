@@ -73,7 +73,11 @@ try {
     az cognitiveservices account create --name $taAccount --resource-group $resourceGroup --kind TextAnalytics --sku F0 --location $location --yes --output none
     $cvKey = az cognitiveservices account keys list --name $cvAccount --resource-group $resourceGroup --query "key1" -o tsv
     $cvEndpoint = az cognitiveservices account show --name $cvAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
-    Write-Host "    ✅ AI Services Provisioned" -ForegroundColor Green
+    $cmKey = az cognitiveservices account keys list --name $cmAccount --resource-group $resourceGroup --query "key1" -o tsv
+    $cmEndpoint = az cognitiveservices account show --name $cmAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    $taKey = az cognitiveservices account keys list --name $taAccount --resource-group $resourceGroup --query "key1" -o tsv
+    $taEndpoint = az cognitiveservices account show --name $taAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    Write-Host "    ✅ AI Services Provisioned & Keys Collected" -ForegroundColor Green
 } catch {
     Write-Host "    ⚠️  AI Services skipped (already exists or limit reached). App will continue..." -ForegroundColor Yellow
 }
@@ -104,7 +108,9 @@ az webapp create --resource-group $resourceGroup --plan $appPlan --name $fronten
 az webapp config appsettings set --resource-group $resourceGroup --name $backendApp --settings `
     DB_HOST="$dbFqdn" DB_USER="$dbUser" DB_PASSWORD="$dbPassword" DB_NAME="$dbName" `
     JWT_SECRET="$jwtSecret" STORAGE_CONNECTION_STRING="$storageConnection" `
-    CV_ENDPOINT="$cvEndpoint" CV_KEY="$cvKey" PORT=8080 --output none
+    CV_ENDPOINT="$cvEndpoint" CV_KEY="$cvKey" `
+    CM_ENDPOINT="$cmEndpoint" CM_KEY="$cmKey" `
+    TA_ENDPOINT="$taEndpoint" TA_KEY="$taKey" PORT=8080 --output none
 
 # Configure Frontend Settings
 az webapp config appsettings set --resource-group $resourceGroup --name $frontendApp --settings `
