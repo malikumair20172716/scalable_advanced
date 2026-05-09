@@ -73,11 +73,13 @@ Show-Success "ACR created and Admin credentials retrieved"
 # STEP 3: Build Images (FIXED: Uses current directory paths)
 # ============================================================================
 Show-Progress 3 "Building Docker Images" "🏗️"
+$imageTag = (Get-Date -Format "yyyyMMddHHmm")   # Unique per deploy - busts Azure image cache
+Show-Info "Image tag: $imageTag  (prevents Azure caching old image on re-deploys)"
 Show-Info "Building Backend..."
-az acr build --registry $registryName --image photoshare-backend:latest --file backend/Dockerfile ./backend
+az acr build --registry $registryName --image "photoshare-backend:$imageTag" --image photoshare-backend:latest --file backend/Dockerfile ./backend
 Show-Info "Building Frontend..."
-az acr build --registry $registryName --image photoshare-frontend:latest --file frontend/Dockerfile ./frontend
-Show-Success "Images pushed to $acrUrl"
+az acr build --registry $registryName --image "photoshare-frontend:$imageTag" --image photoshare-frontend:latest --file frontend/Dockerfile ./frontend
+Show-Success "Images pushed to $acrUrl (tag: $imageTag)"
 
 # ============================================================================
 # STEP 4: PostgreSQL
@@ -98,21 +100,32 @@ $storageConnection = az storage account show-connection-string --resource-group 
 Show-Success "Storage container 'photos' created"
 
 # ============================================================================
-# STEPS 7-9: AI Services
+# STEPS 7-9: AI Services (wrapped in try/catch - some may be unavailable in region)
 # ============================================================================
 Show-Progress 7 "Provisioning AI Services" "🤖"
-az cognitiveservices account create --name $cvAccount --resource-group $resourceGroup --kind ComputerVision --sku F0 --location $location --yes --output none
-$cvEndpoint = az cognitiveservices account show --name $cvAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
-$cvKey = az cognitiveservices account keys list --name $cvAccount --resource-group $resourceGroup --query "key1" -o tsv
+$cvEndpoint = ""; $cvKey = ""; $cmEndpoint = ""; $cmKey = ""; $taEndpoint = ""; $taKey = ""
 
-az cognitiveservices account create --name $cmAccount --resource-group $resourceGroup --kind ContentModerator --sku F0 --location $location --yes --output none
-$cmEndpoint = az cognitiveservices account show --name $cmAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
-$cmKey = az cognitiveservices account keys list --name $cmAccount --resource-group $resourceGroup --query "key1" -o tsv
+try {
+    az cognitiveservices account create --name $cvAccount --resource-group $resourceGroup --kind ComputerVision --sku F0 --location $location --yes --output none
+    $cvEndpoint = az cognitiveservices account show --name $cvAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    $cvKey = az cognitiveservices account keys list --name $cvAccount --resource-group $resourceGroup --query "key1" -o tsv
+    Show-Success "Computer Vision provisioned"
+} catch { Write-Host "    ⚠️  Computer Vision skipped (may not be available in $location)" -ForegroundColor Yellow }
 
-az cognitiveservices account create --name $taAccount --resource-group $resourceGroup --kind TextAnalytics --sku F0 --location $location --yes --output none
-$taEndpoint = az cognitiveservices account show --name $taAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
-$taKey = az cognitiveservices account keys list --name $taAccount --resource-group $resourceGroup --query "key1" -o tsv
-Show-Success "Computer Vision, Content Moderator, and Text Analytics online"
+try {
+    az cognitiveservices account create --name $cmAccount --resource-group $resourceGroup --kind ContentModerator --sku F0 --location $location --yes --output none
+    $cmEndpoint = az cognitiveservices account show --name $cmAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    $cmKey = az cognitiveservices account keys list --name $cmAccount --resource-group $resourceGroup --query "key1" -o tsv
+    Show-Success "Content Moderator provisioned"
+} catch { Write-Host "    ⚠️  Content Moderator skipped (legacy service - may be unavailable)" -ForegroundColor Yellow }
+
+try {
+    az cognitiveservices account create --name $taAccount --resource-group $resourceGroup --kind TextAnalytics --sku F0 --location $location --yes --output none
+    $taEndpoint = az cognitiveservices account show --name $taAccount --resource-group $resourceGroup --query "properties.endpoint" -o tsv
+    $taKey = az cognitiveservices account keys list --name $taAccount --resource-group $resourceGroup --query "key1" -o tsv
+    Show-Success "Text Analytics provisioned"
+} catch { Write-Host "    ⚠️  Text Analytics skipped (may not be available in $location)" -ForegroundColor Yellow }
+Show-Success "AI Services step complete (see above for individual status)"
 
 # ============================================================================
 # STEP 10: Key Vault
@@ -136,27 +149,100 @@ Show-Success "App Plan created"
 # ============================================================================
 # STEP 12: Backend Deployment (FIXED: Init with Nginx placeholder)
 # ============================================================================
+# ============================================================================
+# STEP 12: Backend Deployment
+# ============================================================================
 Show-Progress 12 "Deploying Backend Web App" "⚙️"
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $backendApp --deployment-container-image-name nginx --output none
-az webapp config container set --name $backendApp --resource-group $resourceGroup --container-image-name "$acrUrl/photoshare-backend:latest" --container-registry-url "https://$acrUrl" --container-registry-user "$acrUsername" --container-registry-password "$acrPassword" --output none
+
+# Use versioned tag (not :latest) so Azure is FORCED to pull the new image
+az webapp config container set --name $backendApp --resource-group $resourceGroup `
+    --container-image-name "$acrUrl/photoshare-backend:$imageTag" `
+    --container-registry-url "https://$acrUrl" `
+    --container-registry-user "$acrUsername" `
+    --container-registry-password "$acrPassword" --output none
 
 az webapp config appsettings set --resource-group $resourceGroup --name $backendApp --settings `
     DB_HOST="$dbFqdn" DB_USER="$dbUser" DB_PASSWORD="$dbPassword" DB_NAME="$dbName" `
     JWT_SECRET="$jwtSecret" STORAGE_CONNECTION_STRING="$storageConnection" `
     CV_ENDPOINT="$cvEndpoint" CV_KEY="$cvKey" CM_ENDPOINT="$cmEndpoint" CM_KEY="$cmKey" `
-    TA_ENDPOINT="$taEndpoint" TA_KEY="$taKey" PORT=8080 --output none
-Show-Success "Backend online"
+    TA_ENDPOINT="$taEndpoint" TA_KEY="$taKey" PORT=8080 NODE_ENV="production" --output none
+
+# Restart to force pull of new image
+az webapp restart --resource-group $resourceGroup --name $backendApp --output none
+Show-Success "Backend deployed and restarted (image: $imageTag)"
+
+# Initialize Database Schema
+Show-Info "Initializing database schema..."
+Write-Host "    Waiting 30s for PostgreSQL to be ready..." -ForegroundColor Gray
+Start-Sleep -Seconds 30
+$schemaPath = "backend/src/db/schema.sql"
+if (Test-Path $schemaPath) {
+    $psqlCheck = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlCheck) {
+        $env:PGPASSWORD = $dbPassword
+        psql -h "$dbFqdn" -U "$dbUser" -d "$dbName" -f $schemaPath
+        Show-Success "Database schema initialized via psql"
+    } else {
+        Write-Host "    ⚠️  psql not installed. Run manually after deployment:" -ForegroundColor Yellow
+        Write-Host "        psql -h $dbFqdn -U $dbUser -d $dbName -f $schemaPath" -ForegroundColor Gray
+        Write-Host "        OR: Azure Portal -> PostgreSQL -> Query Editor" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "    ⚠️  Schema file not found at $schemaPath" -ForegroundColor Yellow
+}
 
 # ============================================================================
-# STEP 13: Frontend Deployment (FIXED: Init with Nginx placeholder)
+# STEP 13: Frontend Deployment
 # ============================================================================
 Show-Progress 13 "Deploying Frontend Web App" "⚡"
 az webapp create --resource-group $resourceGroup --plan $appPlan --name $frontendApp --deployment-container-image-name nginx --output none
-az webapp config container set --name $frontendApp --resource-group $resourceGroup --container-image-name "$acrUrl/photoshare-frontend:latest" --container-registry-url "https://$acrUrl" --container-registry-user "$acrUsername" --container-registry-password "$acrPassword" --output none
+
+# Use versioned tag (not :latest) - this is the key fix for "old UI" problem
+az webapp config container set --name $frontendApp --resource-group $resourceGroup `
+    --container-image-name "$acrUrl/photoshare-frontend:$imageTag" `
+    --container-registry-url "https://$acrUrl" `
+    --container-registry-user "$acrUsername" `
+    --container-registry-password "$acrPassword" --output none
 
 az webapp config appsettings set --resource-group $resourceGroup --name $frontendApp --settings `
-    REACT_APP_API_URL="https://$backendApp.azurewebsites.net" --output none
-Show-Success "Frontend online"
+    REACT_APP_API_URL="https://$backendApp.azurewebsites.net/api" --output none
+
+# Restart to force pull of new image
+az webapp restart --resource-group $resourceGroup --name $frontendApp --output none
+Show-Success "Frontend deployed and restarted (image: $imageTag)"
+
+# ============================================================================
+# STEP 15: Final Summary
+# ============================================================================
+Show-Progress 15 "Deployment Complete" "✅"
+
+$backendUrl  = "https://$backendApp.azurewebsites.net"
+$frontendUrl = "https://$frontendApp.azurewebsites.net"
+
+Write-Host ""
+Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Green
+Write-Host "║  ✅ DEPLOYMENT SUCCESSFUL                                 ║" -ForegroundColor Green
+Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host ""
+Write-Host "🌐 Frontend:     $frontendUrl" -ForegroundColor Cyan
+Write-Host "⚙️  Backend API:  $backendUrl/api" -ForegroundColor Cyan
+Write-Host "💚 Health Check: $backendUrl/health" -ForegroundColor Cyan
+Write-Host "🏷️  Image Tag:    $imageTag" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "📋 Next Steps:" -ForegroundColor Yellow
+Write-Host "   1. Wait 2-3 minutes for containers to fully start"
+Write-Host "   2. Visit: $frontendUrl"
+Write-Host "   3. Register as Creator → Upload photo"
+Write-Host "   4. Register as Consumer → Browse, comment, rate"
+Write-Host ""
+Write-Host "📝 View live logs:" -ForegroundColor Yellow
+Write-Host "   az webapp log tail -g $resourceGroup -n $backendApp" -ForegroundColor Gray
+Write-Host "   az webapp log tail -g $resourceGroup -n $frontendApp" -ForegroundColor Gray
+Write-Host ""
+Write-Host "🔄 To re-deploy after code changes:" -ForegroundColor Yellow
+Write-Host "   Run this script again - new image tag auto-generated, old UI WILL NOT be served" -ForegroundColor Gray
+Write-Host ""
 
 # ============================================================================
 # STEP 15: Final Summary
