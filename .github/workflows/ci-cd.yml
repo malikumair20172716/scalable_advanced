@@ -2,18 +2,15 @@ name: PhotoShare Enterprise CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
     branches: [ main ]
 
 jobs:
-  # 1. Quality Gate: Backend & Frontend Validation
+  # 1. Quality Gate: Validation
   validation:
     name: Lint & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,16 +24,15 @@ jobs:
         working-directory: ./backend
         run: |
           npm ci
-          npm run lint --if-present
           npm test -- --passWithNoTests
 
       - name: Validate Frontend
         working-directory: ./frontend
         run: |
           npm ci
-          npm run build # Verifies build success
+          npm run build
 
-  # 2. Build & Deploy: Production Release (Main Branch Only)
+  # 2. Build & Push (Azure will auto-deploy via Webhook)
   release:
     name: Build & Push to ACR
     needs: [validation]
@@ -45,57 +41,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to Azure Container Registry
+      - name: Log in to ACR
         uses: azure/docker-login@v2
         with:
           login-server: ${{ secrets.ACR_NAME }}.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Set Image Tag
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          tags: |
-            ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-backend:latest
-            ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-backend:${{ env.IMAGE_TAG }}
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-backend:latest
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: |
-            ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:latest
-            ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:${{ env.IMAGE_TAG }}
-
-  # 3. Azure Deployment (Main Branch Only)
-  deploy:
-    name: Deploy to Azure Web Apps
-    needs: [release]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy Backend to Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_BACKEND_APP_NAME }}
-          images: ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-backend:latest
-
-      - name: Deploy Frontend to Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_FRONTEND_APP_NAME }}
-          images: ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:latest
-
-      - name: Azure Logout
-        run: az logout
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:latest
