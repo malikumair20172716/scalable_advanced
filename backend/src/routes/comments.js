@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/photo/:photoId', async (req, res, next) => {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.content, c.created_at, u.id as user_id, u.username, u.profile_picture_url
+      `SELECT c.id, c.content, c.sentiment, c.created_at, u.id as user_id, u.username, u.profile_picture_url
        FROM comments c
        JOIN users u ON c.user_id = u.id
        WHERE c.photo_id = $1 AND c.is_deleted = false
