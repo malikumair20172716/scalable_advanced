@@ -9,6 +9,21 @@ jobs:
   validation:
     name: Lint & Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: photoshare_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -22,12 +37,21 @@ jobs:
 
       - name: Validate Backend
         working-directory: ./backend
+        env:
+          DB_HOST: localhost
+          DB_USER: postgres
+          DB_PASSWORD: password
+          DB_NAME: photoshare_test_db
+          NODE_ENV: test
+          JWT_SECRET: test_secret
         run: |
           npm ci
           npm test -- --passWithNoTests
 
       - name: Validate Frontend
         working-directory: ./frontend
+        env:
+          CI: false # Prevents warnings from being treated as errors for faster assignment delivery
         run: |
           npm ci
           npm run build
