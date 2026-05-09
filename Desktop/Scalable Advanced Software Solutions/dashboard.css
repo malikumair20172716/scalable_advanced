@@ -1,0 +1,607 @@
+/* ================================================================
+   MODERN GLASSMORPHISM DASHBOARD - CSS STYLESHEET
+   ================================================================
+   High-end glossy aesthetic with backdrop blur, micro-interactions,
+   and responsive grid layout
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   ROOT VARIABLES & THEME SYSTEM
+   ---------------------------------------------------------------- */
+:root {
+    /* Primary Colors */
+    --primary: #667eea;
+    --primary-light: #8b9eff;
+    --primary-dark: #4c63d2;
+    
+    /* Secondary Colors */
+    --secondary: #764ba2;
+    --secondary-light: #9d6bc6;
+    --secondary-dark: #5a3a7a;
+    
+    /* Accent Colors */
+    --success: #4caf50;
+    --warning: #ffc107;
+    --danger: #ff6b6b;
+    --info: #2196f3;
+    
+    /* Neutral Colors */
+    --bg-dark: #0f1419;
+    --bg-base: #1a1f2e;
+    --bg-light: #2d3748;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b8c8;
+    --text-muted: #8a92a8;
+    
+    /* Glass Effect */
+    --glass-blur: 20px;
+    --glass-opacity: 0.1;
+    --glass-border: rgba(255, 255, 255, 0.2);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 16px 48px rgba(102, 126, 234, 0.2);
+    --shadow-xl: 0 24px 64px rgba(102, 126, 234, 0.25);
+    
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ----------------------------------------------------------------
+   GLOBAL STYLES & BASE ELEMENTS
+   ---------------------------------------------------------------- */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                 sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    
+    /* Dark glossy background with gradient */
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-base) 50%, #1a0f2e 100%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: var(--radius-lg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+}
+
+/* ----------------------------------------------------------------
+   DASHBOARD LAYOUT
+   ---------------------------------------------------------------- */
+
+.dashboard {
+    padding: var(--spacing-2xl);
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Header Section */
+.dashboard-header {
+    margin-bottom: var(--spacing-2xl);
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.header-content {
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, 
+                rgba(102, 126, 234, 0.1) 0%, 
+                rgba(118, 75, 162, 0.05) 100%);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--spacing-xs);
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.dashboard-subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* ----------------------------------------------------------------
+   WIDGETS GRID CONTAINER
+   ---------------------------------------------------------------- */
+
+.widgets-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) 0;
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 1024px) {
+    .widgets-container {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1440px) {
+    .widgets-container {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .widgets-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+    
+    .dashboard {
+        padding: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 480px) {
+    .widgets-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-title {
+        font-size: 1.75rem;
+    }
+}
+
+/* ----------------------------------------------------------------
+   WIDGET BASE STYLING
+   ---------------------------------------------------------------- */
+
+.widget {
+    position: relative;
+    padding: var(--spacing-lg);
+    
+    /* Glassmorphism effect */
+    background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    
+    /* Lighting effect */
+    box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.1),
+        var(--shadow-md);
+    
+    /* Micro-interactions */
+    transition: 
+        transform var(--transition-base),
+        box-shadow var(--transition-base),
+        border-color var(--transition-base);
+    
+    /* Remove default selection */
+    user-select: none;
+    cursor: default;
+}
+
+/* Hover effect: Scale up & enhanced shadow */
+.widget:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.15),
+        var(--shadow-lg);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+/* Widget variants with gradient overlays */
+.widget-stats {
+    background: linear-gradient(135deg,
+                rgba(102, 126, 234, 0.08) 0%,
+                rgba(102, 126, 234, 0.02) 100%);
+    border-color: rgba(102, 126, 234, 0.15);
+}
+
+.widget-activity {
+    background: linear-gradient(135deg,
+                rgba(76, 175, 80, 0.08) 0%,
+                rgba(76, 175, 80, 0.02) 100%);
+    border-color: rgba(76, 175, 80, 0.15);
+}
+
+.widget-performance {
+    background: linear-gradient(135deg,
+                rgba(255, 193, 7, 0.08) 0%,
+                rgba(255, 193, 7, 0.02) 100%);
+    border-color: rgba(255, 193, 7, 0.15);
+}
+
+.widget-growth {
+    background: linear-gradient(135deg,
+                rgba(118, 75, 162, 0.08) 0%,
+                rgba(118, 75, 162, 0.02) 100%);
+    border-color: rgba(118, 75, 162, 0.15);
+}
+
+/* Larger widgets spanning multiple columns */
+.widget-chart {
+    grid-column: span 2;
+}
+
+.widget-tasks {
+    grid-column: span 1;
+}
+
+.widget-notifications {
+    grid-column: span 2;
+}
+
+.widget-support {
+    grid-column: span 1;
+}
+
+/* Responsive: Adjust spans on smaller screens */
+@media (max-width: 1024px) {
+    .widget-chart,
+    .widget-notifications {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .widget-chart,
+    .widget-notifications {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 480px) {
+    .widget-chart,
+    .widget-notifications,
+    .widget-tasks,
+    .widget-support {
+        grid-column: span 1;
+    }
+}
+
+/* ----------------------------------------------------------------
+   WIDGET CONTENT STYLING
+   ---------------------------------------------------------------- */
+
+.widget-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+    display: inline-block;
+    animation: float 3s ease-in-out infinite;
+}
+
+.widget-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.widget-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.widget-value {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.widget-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* ----------------------------------------------------------------
+   CHART WIDGET
+   ---------------------------------------------------------------- */
+
+.chart-placeholder {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.sparkline {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 8px rgba(102, 126, 234, 0.2));
+}
+
+/* ----------------------------------------------------------------
+   TASKS WIDGET
+   ---------------------------------------------------------------- */
+
+.tasks-list {
+    list-style: none;
+    margin-top: var(--spacing-md);
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background var(--transition-fast);
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+    padding-left: var(--spacing-xs);
+}
+
+.task-item input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-right: var(--spacing-md);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: transparent;
+}
+
+.task-item input[type="checkbox"]:hover {
+    background: rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
+}
+
+.task-item input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-color: transparent;
+}
+
+.task-item input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.task-item label {
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: color var(--transition-fast);
+}
+
+/* ----------------------------------------------------------------
+   NOTIFICATIONS WIDGET
+   ---------------------------------------------------------------- */
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--info);
+    transition: all var(--transition-fast);
+}
+
+.notification-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+}
+
+.notification-item.success {
+    border-left-color: var(--success);
+}
+
+.notification-item.warning {
+    border-left-color: var(--warning);
+}
+
+.notification-item.danger {
+    border-left-color: var(--danger);
+}
+
+.notification-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--info);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.notification-item.success .notification-dot {
+    background: var(--success);
+}
+
+.notification-item.warning .notification-dot {
+    background: var(--warning);
+}
+
+.notification-item.danger .notification-dot {
+    background: var(--danger);
+}
+
+/* ----------------------------------------------------------------
+   SUPPORT BUTTON
+   ---------------------------------------------------------------- */
+
+.support-btn {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 
+        all var(--transition-base),
+        box-shadow var(--transition-fast);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.support-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.support-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* ----------------------------------------------------------------
+   ANIMATIONS
+   ---------------------------------------------------------------- */
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* ================================================================
+   LOADING STATE
+   ================================================================ */
+
+.widget.loading {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%
+    );
+    background-size: 1000px 100%;
+}
+
+/* ================================================================
+   ACCESSIBILITY
+   ================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-dark: #f5f7ff;
+        --bg-base: #ffffff;
+        --bg-light: #f0f2ff;
+        --text-primary: #1f2a44;
+        --text-secondary: #4a5568;
+        --text-muted: #8a92a8;
+        --glass-border: rgba(0, 0, 0, 0.1);
+    }
+    
+    body {
+        background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 50%, #f0f2ff 100%);
+    }
+}
