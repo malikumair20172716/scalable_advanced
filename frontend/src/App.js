@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navigation from './components/Navigation';
+import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import PhotoDetailPage from './pages/PhotoDetailPage';
@@ -15,20 +16,25 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <Router>
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/photo/:id" element={<PhotoDetailPage />} />
-            <Route
-              path="/upload"
-              element={
-                <ProtectedRoute role="creator">
-                  <CreatorUploadPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <div className="app-wrapper">
+            <Navigation />
+            <main className="main-content">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/photo/:id" element={<PhotoDetailPage />} />
+                <Route
+                  path="/upload"
+                  element={
+                    <ProtectedRoute role="creator">
+                      <CreatorUploadPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
         </Router>
       </ToastProvider>
     </AuthProvider>

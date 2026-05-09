@@ -59,7 +59,7 @@ Write-Host "    ✅ Database: $dbFqdn" -ForegroundColor Green
 
 # 4. Storage Account
 Write-Host "`n[4/7] Creating Storage..." -ForegroundColor Yellow
-az storage account create --name $storageName --resource-group $resourceGroup --location $location --sku Standard_LRS --output none
+az storage account create --name $storageName --resource-group $resourceGroup --location $location --sku Standard_LRS --allow-blob-public-access true --output none
 az storage container create --account-name $storageName --name photos --public-access blob --output none
 $storageConnection = az storage account show-connection-string --resource-group $resourceGroup --name $storageName --query connectionString -o tsv
 Write-Host "    ✅ Storage: $storageName" -ForegroundColor Green
@@ -121,6 +121,7 @@ Write-Host "`n📋 CI/CD SECRETS FOR GITHUB (Add these NOW):" -ForegroundColor C
 Write-Host "-------------------------------------------------------------"
 Write-Host "ACR_NAME               : $registryName" -ForegroundColor White
 Write-Host "ACR_USERNAME           : $acrUsername" -ForegroundColor White
+Write-Host "DB_NAME                : $dbName" -ForegroundColor White
 Write-Host "ACR_PASSWORD           : $acrPassword" -ForegroundColor White
 Write-Host "AZURE_BACKEND_APP_NAME : $backendApp" -ForegroundColor White
 Write-Host "AZURE_FRONTEND_APP_NAME: $frontendApp" -ForegroundColor White
