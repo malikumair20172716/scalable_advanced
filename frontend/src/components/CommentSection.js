@@ -1,90 +1,113 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from './Toast';
 import './CommentSection.css';
 
 function CommentSection({ photoId }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const token = localStorage.getItem('token');
+  const { isAuthenticated, user } = useAuth();
+  const toast = useToast();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchComments = async () => {
-      try {
-        const response = await axios.get(`/api/comments/photo/${photoId}`);
-        if (!cancelled) {
-          setComments(response.data.comments);
-        }
-      } catch (err) {
-        console.error('Failed to load comments');
-      }
-    };
-
-    fetchComments();
-
-    return () => {
-      cancelled = true;
-    };
+  const fetchComments = useCallback(async () => {
+    try {
+      const response = await api.get(`/photos/${photoId}/comments`);
+      setComments(response.data.comments || []);
+    } catch (err) {
+      console.error('Failed to fetch comments', err);
+    }
   }, [photoId]);
 
-  const handleAddComment = async (e) => {
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) {
-      setError('Please login to comment');
-      return;
-    }
+    if (!newComment.trim()) return;
 
     setLoading(true);
-    setError(null);
-
     try {
-      const response = await axios.post(
-        '/api/comments',
-        { photo_id: photoId, content: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setComments([response.data, ...comments]);
+      await api.post(`/photos/${photoId}/comments`, { content: newComment });
       setNewComment('');
+      toast.success('Comment posted!');
+      fetchComments();
     } catch (err) {
-      setError('Failed to add comment');
+      toast.error('Failed to post comment.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="comments-section">
-      <h3>Comments</h3>
+  const handleDelete = async (commentId) => {
+    if (!window.confirm('Delete this comment?')) return;
+    
+    try {
+      await api.delete(`/photos/${photoId}/comments/${commentId}`);
+      toast.success('Comment deleted');
+      fetchComments();
+    } catch (err) {
+      toast.error('Failed to delete comment.');
+    }
+  };
 
-      {token && (
-        <form onSubmit={handleAddComment} className="comment-form">
-          {error && <p className="error">{error}</p>}
+  return (
+    <div className="comment-section">
+      <h3>Comments ({comments.length})</h3>
+
+      {isAuthenticated ? (
+        <form onSubmit={handleSubmit} className="comment-form">
           <textarea
-            placeholder="Add a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment..."
             required
           />
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || !newComment.trim()}>
             {loading ? 'Posting...' : 'Post Comment'}
           </button>
         </form>
+      ) : (
+        <p className="login-prompt">
+          <a href="/auth">Log in</a> to leave a comment.
+        </p>
       )}
 
       <div className="comments-list">
-        {comments.length === 0 ? (
-          <p>No comments yet</p>
-        ) : (
+        {comments.length > 0 ? (
           comments.map((comment) => (
-            <div key={comment.id} className="comment">
-              <strong>{comment.username}</strong>
-              <p>{comment.content}</p>
-              <small>{new Date(comment.created_at).toLocaleDateString()}</small>
+            <div key={comment.id} className="comment-item">
+              <div className="comment-header">
+                <div className="comment-user">
+                  <div className="mini-avatar">
+                    {comment.username?.[0]?.toUpperCase()}
+                  </div>
+                  <strong>{comment.username}</strong>
+                </div>
+                <div className="comment-actions">
+                  <span className="comment-date">
+                    {new Date(comment.created_at).toLocaleDateString()}
+                  </span>
+                  {user?.id === comment.user_id && (
+                    <button 
+                      className="delete-comment-btn" 
+                      onClick={() => handleDelete(comment.id)}
+                      title="Delete comment"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="comment-content">
+                <p>{comment.content}</p>
+              </div>
             </div>
           ))
+        ) : (
+          <p className="no-comments">No comments yet. Be the first!</p>
         )}
       </div>
     </div>

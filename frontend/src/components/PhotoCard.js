@@ -9,15 +9,29 @@ function PhotoCard({ photo }) {
   return (
     <Link to={`/photo/${photo.id}`} className="photo-card">
       <div className="photo-image">
-        <img src={photo.thumbnail_url || photo.image_url} alt={photo.title} />
+        <img 
+          src={photo.thumbnail_url || photo.image_url} 
+          alt={photo.title} 
+          loading="lazy"
+        />
+        {photo.location && (
+          <div className="location-badge">
+            📍 {photo.location}
+          </div>
+        )}
         <div className="overlay">
-          <p className="comment-count">💬 {photo.comment_count || 0}</p>
-          <p className="rating">⭐ {ratingText}</p>
+          <div className="stats">
+            <span className="stat-item">💬 {photo.comment_count || 0}</span>
+            <span className="stat-item">⭐ {ratingText}</span>
+          </div>
         </div>
       </div>
       <div className="photo-info">
         <h3>{photo.title}</h3>
-        <p className="creator">by {photo.username}</p>
+        <div className="photo-meta">
+          <span className="creator">by {photo.username}</span>
+          {photo.caption && <p className="caption-preview">{photo.caption}</p>}
+        </div>
       </div>
     </Link>
   );

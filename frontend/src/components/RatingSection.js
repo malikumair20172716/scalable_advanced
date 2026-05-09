@@ -1,53 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from './Toast';
 import './RatingSection.css';
 
-function RatingSection({ photoId, currentRating }) {
-  const [userRating, setUserRating] = useState(0);
+function RatingSection({ photoId, initialRating }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [average, setAverage] = useState(Number(initialRating) || 0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const token = localStorage.getItem('token');
-
-  const average = useMemo(() => {
-    if (currentRating === null || currentRating === undefined) return null;
-    const n = Number(currentRating);
-    return Number.isFinite(n) ? n : null;
-  }, [currentRating]);
+  const { isAuthenticated } = useAuth();
+  const toast = useToast();
 
   useEffect(() => {
-    const fetchUserRating = async () => {
-      if (!token) return;
-      try {
-        const response = await axios.get(`/api/ratings/photo/${photoId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUserRating(response.data.rating || 0);
-      } catch (err) {
-        // Non-blocking: rating is optional UX
-      }
-    };
+    // Fetch user's own rating if authenticated
+    if (isAuthenticated) {
+      api.get(`/photos/${photoId}/ratings/me`)
+        .then(res => {
+          if (res.data.rating) setRating(res.data.rating.score);
+        })
+        .catch(() => {}); // Silently ignore if no rating found
+    }
+  }, [photoId, isAuthenticated]);
 
-    fetchUserRating();
-  }, [photoId, token]);
-
-  const handleRate = async (rating) => {
-    if (!token) {
-      alert('Please login to rate');
+  const handleRating = async (score) => {
+    if (!isAuthenticated) {
+      toast.info('Please log in to rate this photo.');
       return;
     }
 
     setLoading(true);
-    setError(null);
     try {
-      await axios.post(
-        '/api/ratings',
-        { photo_id: Number(photoId), rating_value: rating },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUserRating(rating);
+      const res = await api.post(`/photos/${photoId}/ratings`, { score });
+      setRating(score);
+      setAverage(res.data.average_rating);
+      toast.success('Rating submitted! Thanks.');
     } catch (err) {
-      console.error('Failed to submit rating');
-      setError(err.response?.data?.message || 'Failed to submit rating');
+      toast.error('Failed to submit rating.');
     } finally {
       setLoading(false);
     }
@@ -55,22 +44,31 @@ function RatingSection({ photoId, currentRating }) {
 
   return (
     <div className="rating-section">
-      <h3>Rate This Photo</h3>
-      {error && <p className="error">{error}</p>}
       <div className="rating-stars">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            className={`star ${userRating >= star ? 'active' : ''}`}
-            onClick={() => handleRate(star)}
+            type="button"
+            className={`star-btn ${star <= (hover || rating) ? 'active' : ''} ${loading ? 'loading' : ''}`}
+            onClick={() => handleRating(star)}
+            onMouseEnter={() => setHover(star)}
+            onMouseLeave={() => setHover(0)}
             disabled={loading}
           >
-            ⭐
+            ★
           </button>
         ))}
       </div>
-      {average !== null && (
-        <p className="current-rating">Average Rating: {average.toFixed(1)}/5</p>
+      
+      <div className="rating-display">
+        <span className="avg-score">{Number(average).toFixed(1)}</span>
+        <span className="avg-label">Average Score</span>
+      </div>
+      
+      {isAuthenticated && (
+        <p className="user-rating-status">
+          {rating > 0 ? `Your rating: ${rating} stars` : 'Tap a star to rate'}
+        </p>
       )}
     </div>
   );

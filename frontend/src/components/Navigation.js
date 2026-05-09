@@ -1,38 +1,51 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Navigation.css';
 
 function Navigation() {
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
+  const location = useLocation();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
-    window.location.reload();
+    logout();           // Updates context — no page reload needed
+    navigate('/auth');
   };
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          📷 PhotoShare
+          <span className="logo-icon">📷</span>
+          PhotoShare
         </Link>
+
         <ul className="nav-menu">
           <li className="nav-item">
-            <Link to="/" className="nav-link">Home</Link>
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+              Home
+            </Link>
           </li>
-          {user.role === 'creator' && token && (
+
+          {user?.role === 'creator' && token && (
             <li className="nav-item">
-              <Link to="/upload" className="nav-link">Upload</Link>
+              <Link to="/upload" className={`nav-link ${isActive('/upload') ? 'active' : ''}`}>
+                Upload
+              </Link>
             </li>
           )}
+
           {token ? (
             <>
               <li className="nav-item">
-                <span className="nav-user">{user.username} ({user.role})</span>
+                <span className="nav-user">
+                  <span className="user-avatar">{user?.username?.[0]?.toUpperCase()}</span>
+                  {user?.username}
+                  <span className="role-badge">{user?.role}</span>
+                </span>
               </li>
               <li className="nav-item">
                 <button onClick={handleLogout} className="nav-button logout">
@@ -42,7 +55,9 @@ function Navigation() {
             </>
           ) : (
             <li className="nav-item">
-              <Link to="/auth" className="nav-button">Login/Register</Link>
+              <Link to="/auth" className="nav-button">
+                Login / Register
+              </Link>
             </li>
           )}
         </ul>

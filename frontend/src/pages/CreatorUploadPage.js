@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
+import { useToast } from '../components/Toast';
 import './CreatorUploadPage.css';
 
 function CreatorUploadPage() {
@@ -13,8 +14,7 @@ function CreatorUploadPage() {
   const [photoFile, setPhotoFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const toast = useToast();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,13 +24,13 @@ function CreatorUploadPage() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size too large. Max 5MB.');
+        return;
+      }
       setPhotoFile(file);
-      
-      // Create preview
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target.result);
-      };
+      reader.onload = (e) => setPreview(e.target.result);
       reader.readAsDataURL(file);
     }
   };
@@ -38,22 +38,15 @@ function CreatorUploadPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login first');
-        return;
-      }
-
       if (!formData.title) {
-        setError('Title is required');
+        toast.error('Title is required');
         return;
       }
 
       if (!photoFile && !formData.image_url) {
-        setError('Please upload a photo or provide an image URL');
+        toast.error('Please upload a photo or provide an image URL');
         return;
       }
 
@@ -62,119 +55,146 @@ function CreatorUploadPage() {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      // Use FormData for multipart/form-data
       const uploadData = new FormData();
       uploadData.append('title', formData.title);
       uploadData.append('caption', formData.caption);
       uploadData.append('location', formData.location);
-      if (formData.image_url) {
-        uploadData.append('image_url', formData.image_url);
-      }
-      if (photoFile) {
-        uploadData.append('photo_file', photoFile);
-      }
+      
+      if (formData.image_url) uploadData.append('image_url', formData.image_url);
+      if (photoFile) uploadData.append('photo_file', photoFile);
+      
       if (tagsArray.length > 0) {
         tagsArray.forEach((tag, index) => {
           uploadData.append(`tags[${index}]`, tag);
         });
       }
 
-      await axios.post('/api/photos', uploadData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      await api.post('/photos', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setMessage('Photo uploaded successfully!');
+      toast.success('Awesome! Your photo is now live.');
       setFormData({ title: '', caption: '', location: '', image_url: '', tags: '' });
       setPhotoFile(null);
       setPreview(null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed');
+      toast.error(err.response?.data?.message || 'Upload failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="upload-page">
-      <h2>Upload Photo</h2>
-      
-      {message && <div className="success-message">{message}</div>}
-      {error && <div className="error-message">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="upload-form">
-        <input
-          type="text"
-          name="title"
-          placeholder="Photo Title"
-          value={formData.title}
-          onChange={handleChange}
-          required
-        />
-        <textarea
-          name="caption"
-          placeholder="Photo Caption"
-          value={formData.caption}
-          onChange={handleChange}
-          rows="4"
-        />
-        <input
-          type="text"
-          name="location"
-          placeholder="Location"
-          value={formData.location}
-          onChange={handleChange}
-        />
-        
-        <div className="upload-section">
-          <h3>Upload Photo File or Provide URL</h3>
-          
-          <div className="file-upload">
-            <input
-              type="file"
-              id="photo-file"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-            <label htmlFor="photo-file" className="file-label">
-              {photoFile ? `Selected: ${photoFile.name}` : 'Choose photo file (JPG, PNG, GIF, WebP)'}
-            </label>
+    <div className="upload-page page-enter">
+      <div className="container">
+        <div className="upload-container">
+          <div className="upload-header">
+            <h2>Share Your Masterpiece</h2>
+            <p>Upload your high-quality photos and reach our global community.</p>
           </div>
 
-          {preview && (
-            <div className="preview-container">
-              <p>Preview:</p>
-              <img src={preview} alt="Preview" className="preview-image" />
-              <button type="button" onClick={() => { setPhotoFile(null); setPreview(null); }}>
-                Remove file
+          <form onSubmit={handleSubmit} className="upload-main-form">
+            <div className="upload-grid">
+              <div className="upload-fields">
+                <div className="form-group">
+                  <label>Title <span className="required">*</span></label>
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="E.g. Sunset in Bali"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Caption</label>
+                  <textarea
+                    name="caption"
+                    placeholder="Tell the story behind this photo..."
+                    value={formData.caption}
+                    onChange={handleChange}
+                    rows="4"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Location</label>
+                    <input
+                      type="text"
+                      name="location"
+                      placeholder="City, Country"
+                      value={formData.location}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>People Tags</label>
+                    <input
+                      type="text"
+                      name="tags"
+                      placeholder="Alex, Sarah (comma separated)"
+                      value={formData.tags}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="upload-media">
+                <div className="media-selector">
+                  <div className={`dropzone ${photoFile ? 'has-file' : ''}`}>
+                    <input
+                      type="file"
+                      id="photo-file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    <label htmlFor="photo-file">
+                      {preview ? (
+                        <div className="preview-wrap">
+                          <img src={preview} alt="Preview" />
+                          <div className="preview-overlay">Change Photo</div>
+                        </div>
+                      ) : (
+                        <div className="upload-placeholder">
+                          <span className="upload-icon">📁</span>
+                          <strong>Click to upload</strong>
+                          <span>or drag and drop</span>
+                          <small>JPG, PNG, WebP (Max 5MB)</small>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  <div className="url-separator">
+                    <span>OR</span>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Image URL</label>
+                    <input
+                      type="url"
+                      name="image_url"
+                      placeholder="https://example.com/image.jpg"
+                      value={formData.image_url}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="upload-actions">
+              <button type="submit" className="upload-submit-btn" disabled={loading}>
+                {loading ? 'Publishing...' : 'Publish Photo'}
               </button>
             </div>
-          )}
-
-          <p className="or-text">OR</p>
-
-          <input
-            type="url"
-            name="image_url"
-            placeholder="Image URL"
-            value={formData.image_url}
-            onChange={handleChange}
-          />
+          </form>
         </div>
-
-        <input
-          type="text"
-          name="tags"
-          placeholder="People tags (comma separated)"
-          value={formData.tags}
-          onChange={handleChange}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Uploading...' : 'Upload Photo'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
