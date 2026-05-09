@@ -37,11 +37,14 @@ router.post('/', verifyToken, async (req, res, next) => {
       return res.status(404).json({ message: 'Photo not found' });
     }
 
+    const { analyzeSentiment } = await import('../services/aiService.js');
+    const sentiment = await analyzeSentiment(content);
+
     const result = await pool.query(
-      `INSERT INTO comments (photo_id, user_id, content)
-       VALUES ($1, $2, $3)
-       RETURNING id, content, created_at, user_id`,
-      [photo_id, req.user.id, content]
+      `INSERT INTO comments (photo_id, user_id, content, sentiment)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, content, sentiment, created_at, user_id`,
+      [photo_id, req.user.id, content, sentiment]
     );
 
     res.status(201).json(result.rows[0]);

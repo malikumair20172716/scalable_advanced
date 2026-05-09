@@ -73,3 +73,34 @@ export async function moderateImage(imageUrl) {
     return { isSafe: true };
   }
 }
+
+export async function analyzeSentiment(text) {
+  const endpoint = process.env.TA_ENDPOINT; // Text Analytics
+  const key = process.env.TA_KEY;
+
+  if (!endpoint || !key || !text) return 'neutral';
+
+  try {
+    const url = `${endpoint.replace(/\/$/, '')}/text/analytics/v3.1/sentiment`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': key,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        documents: [{ id: '1', text: text }]
+      })
+    });
+
+    if (!response.ok) return 'neutral';
+
+    const data = await response.json();
+    const sentiment = data.documents[0]?.sentiment || 'neutral';
+    return sentiment;
+  } catch (error) {
+    console.error('AI Error (Sentiment):', error.message);
+    return 'neutral';
+  }
+}

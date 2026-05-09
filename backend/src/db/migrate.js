@@ -106,6 +106,8 @@ async function main() {
     if (tableExists.rows.length > 0) {
       console.log('Schema already exists. Checking constraints...');
       await enforceUsersRoleConstraint(pool);
+      // Ensure sentiment column exists in comments for AI features
+      await pool.query('ALTER TABLE comments ADD COLUMN IF NOT EXISTS sentiment VARCHAR(50) DEFAULT \'neutral\'');
     } else {
       const schemaPath = path.resolve(__dirname, './schema.sql');
       const schemaSql = await fs.readFile(schemaPath, 'utf8');

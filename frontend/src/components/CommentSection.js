@@ -53,6 +53,14 @@ function CommentSection({ photoId }) {
     }
   };
 
+  const getSentimentEmoji = (sentiment) => {
+    switch (sentiment) {
+      case 'positive': return '😊';
+      case 'negative': return '☹️';
+      default: return '😐';
+    }
+  };
+
   return (
     <div className="comment-section">
       <h3>Comments ({comments.length})</h3>
@@ -85,6 +93,9 @@ function CommentSection({ photoId }) {
                     {comment.username?.[0]?.toUpperCase()}
                   </div>
                   <strong>{comment.username}</strong>
+                  <span className="sentiment-badge" title={`AI Sentiment: ${comment.sentiment}`}>
+                    {getSentimentEmoji(comment.sentiment)}
+                  </span>
                 </div>
                 <div className="comment-actions">
                   <span className="comment-date">
