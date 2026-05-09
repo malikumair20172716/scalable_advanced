@@ -64,8 +64,8 @@ function CreatorUploadPage() {
       if (photoFile) uploadData.append('photo_file', photoFile);
       
       if (tagsArray.length > 0) {
-        tagsArray.forEach((tag, index) => {
-          uploadData.append(`tags[${index}]`, tag);
+        tagsArray.forEach((tag) => {
+          uploadData.append('tags', tag);
         });
       }
 
