@@ -4,6 +4,7 @@ import { verifyToken, requireRole } from '../middleware/authMiddleware.js';
 import { cache } from '../config/cache.js';
 import upload from '../middleware/fileUpload.js';
 import { uploadImage } from '../config/storage.js';
+import { analyzeImage, moderateImage } from '../services/aiService.js';
 
 const router = express.Router();
 
@@ -149,10 +150,17 @@ router.post('/', verifyToken, requireRole(['creator']), upload.single('photo_fil
     // Determine image URL: either from uploaded file or provided URL
     let finalImageUrl = image_url;
     if (req.file) {
-      // Upload to Azure Blob when configured, otherwise store locally.
       finalImageUrl = await uploadImage(req.file);
     } else if (!finalImageUrl) {
       return res.status(400).json({ message: 'Either upload a file or provide an image URL' });
+    }
+
+    // AI CONTENT MODERATION (Safety Check)
+    if (finalImageUrl.startsWith('http')) {
+      const safety = await moderateImage(finalImageUrl);
+      if (!safety.isSafe) {
+        return res.status(400).json({ message: 'Upload rejected: Inappropriate content detected by AI.' });
+      }
     }
 
     const result = await pool.query(
@@ -164,6 +172,13 @@ router.post('/', verifyToken, requireRole(['creator']), upload.single('photo_fil
 
     const photo = result.rows[0];
 
+    // AI AUTO-TAGGING
+    let finalTags = Array.isArray(tags) ? tags : [];
+    if (finalImageUrl.startsWith('http')) {
+      const aiTags = await analyzeImage(finalImageUrl);
+      finalTags = [...new Set([...finalTags, ...aiTags])];
+    }
+
     if (thumbnail_url) {
       await pool.query(
         `UPDATE photos SET thumbnail_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
@@ -172,8 +187,8 @@ router.post('/', verifyToken, requireRole(['creator']), upload.single('photo_fil
       photo.thumbnail_url = thumbnail_url;
     }
 
-    if (Array.isArray(tags) && tags.length > 0) {
-      const cleanedTags = [...new Set(tags.map((t) => String(t).trim()).filter(Boolean))];
+    if (finalTags.length > 0) {
+      const cleanedTags = [...new Set(finalTags.map((t) => String(t).trim()).filter(Boolean))];
       for (const tagName of cleanedTags) {
         await pool.query(
           `INSERT INTO photo_tags (photo_id, tag_name)
