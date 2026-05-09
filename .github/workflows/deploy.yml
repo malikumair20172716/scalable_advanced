@@ -1,30 +1,24 @@
-name: PhotoShare Build and Deploy
+name: Build and Push Frontend
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: # Allows you to manually trigger the build from GitHub
+    branches: [ main ] # Triggers when you push to main
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Azure Container Registry Login
-      uses: azure/docker-login@v1
-      with:
-        login-server: photoshareacr68907.azurecr.io
-        username: photoshareacr68907
-        password: ${{ secrets.ACR_PASSWORD }}
+      - name: Log in to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_NAME }}.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-    - name: Build & Push Backend
-      run: |
-        docker build -t photoshareacr68907.azurecr.io/photoshare-backend:latest ./backend
-        docker push photoshareacr68907.azurecr.io/photoshare-backend:latest
-
-    - name: Build & Push Frontend
-      run: |
-        docker build -t photoshareacr68907.azurecr.io/photoshare-frontend:latest ./frontend
-        docker push photoshareacr68907.azurecr.io/photoshare-frontend:latest
+      - name: Build and Push Image
+        run: |
+          docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:latest ./frontend
+          docker push ${{ secrets.ACR_NAME }}.azurecr.io/photoshare-frontend:latest
