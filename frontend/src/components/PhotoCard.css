@@ -20,7 +20,7 @@
   position: relative;
   overflow: hidden;
   width: 100%;
-  aspect-ratio: 16 / 11; /* Cinematic aspect ratio */
+  height: 240px; /* Hard-locked height for a perfect grid */
   background: #f1f5f9;
 }
 
